@@ -53,3 +53,27 @@ adapt.fun <- function(mi, mod){
   modnew <- paste(mod, addline, sep = " \n ")
   return(modnew)
 }
+
+## Function to create a dataframe with posterior means and CIs based on list with stan fitobjects
+df_est <- function(fitls, CI = "95%"){
+  out <- lapply(fitls, function(x){
+    summ <- summary(x, probs = c(0.025, 0.975, 0.05, 0.95, 0.1, 0.9))$summary
+    if(CI == "95%"){
+      cbind.data.frame("par" = rownames(summ), 
+                       summ[, c("mean", "2.5%", "97.5%")])
+    } else if(CI == "90%"){
+      cbind.data.frame("par" = rownames(summ), 
+                       summ[, c("mean", "5%", "95%")])
+    } else if(CI == "80%"){
+      cbind.data.frame("par" = rownames(summ), 
+                       summ[, c("mean", "10%", "90%")])
+    }
+    
+  })
+  out.df <- list()
+  for(i in 1:length(out)){
+    prior <- names(out)[i]
+    out.df[[i]] <- cbind.data.frame(out[[i]], prior)
+  }
+  return(out.df)
+}

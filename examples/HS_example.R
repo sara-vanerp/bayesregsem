@@ -138,5 +138,95 @@ lay <- get_layout("", "", "visual","","textual","","","speed", "", "",
 graph_sem(fittest, layout = lay)
 
 ##### 5. Fit bayesregsem model with shrinkage priors on the training set and select cross-loadings to free -----
+parsel <- c("L_main_C", "L_cross_C", "phi_C", "psi")
+
+## Ridge 1
+mod.ridge <- stan_model("./examples/HS_ridge.stan")
+standat.ridge <- list(N = nrow(traindat),
+                      P = ncol(traindat),
+                      Q = 3,
+                      C = 20,
+                      y = traindat,
+                      s0 = 0.03) # variance of .001
+fit.ridge1 <- sampling(mod.ridge, data = standat.ridge, iter = 4000, pars = parsel)
+save(fit.ridge1, file = "./examples/HS_fit_ridge03.RData")
+
+## Regularized horseshoe 1
+mod.reghs <- stan_model("./examples/HS_reghs.stan")
+standat.reghs1 <- list(N = nrow(traindat),
+                      P = ncol(traindat),
+                      Q = 3,
+                      C = 20,
+                      y = traindat,
+                      scale_global = 1,
+                      nu_global = 1,
+                      nu_local = 1,
+                      slab_scale = 1,
+                      slab_df = 1)
+fit.reghs1 <- sampling(mod.reghs, data = standat.reghs1, iter = 4000, pars = parsel)
+save(fit.reghs1, file = "./examples/HS_fit_reghs1.RData")
+
+## Regularized horseshoe 2
+standat.reghs2 <- list(N = nrow(traindat),
+                      P = ncol(traindat),
+                      Q = 3,
+                      C = 20,
+                      y = traindat,
+                      scale_global = 0.01,
+                      nu_global = 1,
+                      nu_local = 1,
+                      slab_scale = 1,
+                      slab_df = 1)
+fit.reghs2 <- sampling(mod.reghs, data = standat.reghs2, iter = 4000, pars = parsel)
+save(fit.reghs2, file = "./examples/HS_fit_reghs2.RData")
+
 ##### 6. Compare estimates between shrinkage priors -----
+load("./examples/HS_fit_ridge1.RData")
+load("./examples/HS_fit_reghs1.RData")
+load("./examples/HS_fit_reghs2.RData")
+
+fitls <- list("ridge1" = fit.ridge1,
+              "reghs1" = fit.reghs1,
+              "reghs2" = fit.reghs2)
+
+## create df with posterior means and CIs
+estdf <- do.call(rbind, df_est(fitls, CI = "90%"))
+
+## plot
+crossF1 <- c("L_cross_C[7]", "L_cross_C[8]", "L_cross_C[9]",
+             "L_cross_C[13]", "L_cross_C[14]", "L_cross_C[15]", "L_cross_C[16]")
+crossF2 <- c("L_cross_C[1]", "L_cross_C[2]", "L_cross_C[3]",
+             "L_cross_C[17]", "L_cross_C[18]", "L_cross_C[19]", "L_cross_C[20]")
+crossF3 <- c("L_cross_C[4]", "L_cross_C[5]", "L_cross_C[6]",
+             "L_cross_C[10]", "L_cross_C[11]", "L_cross_C[12]")
+
+# select parameters to plot
+plotdat <- estdf[which(estdf$par %in% crossF1), ]
+plotdat <- estdf[grep("L_main_C", estdf$par), ]
+plotdat <- estdf[grep("phi_C", estdf$par), ]
+plotdat <- estdf[grep("psi", estdf$par), ]
+pd <- position_dodge(0.3)
+ggplot(plotdat, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `5%`, ymax = `95%`), width = .2, position = pd) +
+  geom_point(position = pd)
+
 ##### 7. Test the resulting model on the test set -----
+## Based on the 95% CI, we would add cross-loading 15
+HSmodB <- 'visual =~ x1 + x2 + x3 + x9
+textual =~ x4 + x5 + x6
+speed =~ x7 + x8 + x9 + x10'
+
+fittestB <- cfa(HSmodB, 
+               data = testdat)
+
+fitmeastestB <- fitmeasures(fittestB, 
+                           c("pvalue", "cfi", "tli", "rmsea", "srmr"))
+rbind(
+  fitmeastest,
+  fitmeastestB
+)
+
+## Plot final model (with 1 added cross-loading)
+lay <- get_layout("", "", "visual","","textual","","","speed", "", "",
+                  "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", rows = 2)
+graph_sem(fittestB, layout = lay)
