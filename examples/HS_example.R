@@ -5,6 +5,7 @@ library(dplyr)
 library(ggplot2)
 library(lavaan)
 library(tidySEM)
+library(regsem)
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -119,8 +120,11 @@ fit6$MIs
 fittest <- cfa(HSmod5, 
                data = testdat)
 
+summary(fittest, fit.measures = TRUE)
+
 fitmeastest <- fitmeasures(fittest, 
                            c("pvalue", "cfi", "tli", "rmsea", "srmr"))
+
 ## combine all fit measures
 rbind(
   fit0$fit,
@@ -149,7 +153,7 @@ standat.ridge <- list(N = nrow(traindat),
                       y = traindat,
                       s0 = 0.03) # variance of .001
 fit.ridge1 <- sampling(mod.ridge, data = standat.ridge, iter = 4000, pars = parsel)
-save(fit.ridge1, file = "./examples/HS_fit_ridge03.RData")
+save(fit.ridge1, file = "./examples/HS_fit_ridge1.RData")
 
 ## Regularized horseshoe 1
 mod.reghs <- stan_model("./examples/HS_reghs.stan")
@@ -190,7 +194,7 @@ fitls <- list("ridge1" = fit.ridge1,
               "reghs2" = fit.reghs2)
 
 ## create df with posterior means and CIs
-estdf <- do.call(rbind, df_est(fitls, CI = "90%"))
+estdf <- do.call(rbind, df_est(fitls, CI = "95%"))
 
 ## plot
 crossF1 <- c("L_cross_C[7]", "L_cross_C[8]", "L_cross_C[9]",
@@ -207,7 +211,7 @@ plotdat <- estdf[grep("phi_C", estdf$par), ]
 plotdat <- estdf[grep("psi", estdf$par), ]
 pd <- position_dodge(0.3)
 ggplot(plotdat, aes(x = par, y = `mean`, colour = prior, group = prior)) +
-  geom_errorbar(aes(ymin = `5%`, ymax = `95%`), width = .2, position = pd) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd)
 
 ##### 7. Test the resulting model on the test set -----
@@ -230,3 +234,58 @@ rbind(
 lay <- get_layout("", "", "visual","","textual","","","speed", "", "",
                   "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", rows = 2)
 graph_sem(fittestB, layout = lay)
+
+##### 8. Apply classical regsem to the training set -----
+## Fit model with all cross-loadings in lavaan
+HS.mod.cl <- HSmod0 <- 'visual =~ lv1*x1 + lv2*x2 + lv3*x3 + lv4*x4 + lv5*x5 + lv6*x6 + lv7*x7 + lv8*x8 + lv9*x9 + lv10*x10
+textual =~ lt1*x1 + lt2*x2 + lt3*x3 + lt4*x4 + lt5*x5 + lt6*x6 + lt7*x7 + lt8*x8 + lt9*x9 + lt10*x10
+speed =~ ls1*x1 + ls2*x2 + ls3*x3 + ls4*x4 + ls5*x5 + ls6*x6 + ls7*x7 + ls8*x8 + ls9*x9 + ls10*x10'
+
+fit.lav <- cfa(HS.mod.cl, data = traindat, std.lv = TRUE)
+
+## Use the resulting fitobject in regsem
+cl <- c("lv4", "lv5", "lv6", "lv7", "lv8", "lv9", "lv10",
+        "lt1", "lt2", "lt3", "lt7", "lt8", "lt9", "lt10",
+        "ls1", "ls2", "ls3", "ls4", "ls5", "ls6")
+fit.regsem <- cv_regsem(fit.lav, 
+                        pars_pen = cl,
+                        n.lambda = 25,
+                        jump = .025,
+                        type = "lasso",
+                        metric = "BIC")
+
+## Get fit results
+summary(fit.regsem)
+round(fit.regsem$fits, 2)
+plot(fit.regsem, show.minimum = "BIC")
+
+## Get estimates
+est.reg <- fit.regsem$final_pars
+names(est.reg) <- c("L_main_C[1]", "L_main_C[2]", "L_main_C[3]",
+                    "L_cross_C[7]", "L_cross_C[8]", "L_cross_C[9]", "L_cross_C[13]", "L_cross_C[14]", "L_cross_C[15]", "L_cross_C[16]",
+                    "L_cross_C[1]", "L_cross_C[2]", "L_cross_C[3]", 
+                    "L_main_C[4]", "L_main_C[5]", "L_main_C[6]",
+                    "L_cross_C[17]", "L_cross_C[18]", "L_cross_C[19]", "L_cross_C[20]",
+                    "L_cross_C[4]", "L_cross_C[5]", "L_cross_C[6]", "L_cross_C[10]", "L_cross_C[11]", "L_cross_C[12]", 
+                    "L_main_C[7]", "L_main_C[8]", "L_main_C[9]", "L_main_C[10]",
+                    "psi[1]", "psi[2]", "psi[3]", "psi[4]", "psi[5]", "psi[6]", "psi[7]", "psi[8]", "psi[9]", "psi[10]",
+                    "phi_C[1,2]", "phi_C[1,3]", "phi_C[2,3]")
+
+estdf.reg <- cbind.data.frame("par" = names(est.reg), 
+                              "mean" = est.reg,
+                              "2.5%" = NA,
+                              "97.5%" = NA,
+                              "prior" = "regsem")
+
+## Combine with shrinkage estimates and plot
+estdf.comb <- rbind.data.frame(estdf, estdf.reg)
+
+# select parameters to plot
+plotdat <- estdf.comb[which(estdf.comb$par %in% crossF1), ]
+plotdat <- estdf.comb[grep("L_main_C", estdf.comb$par), ]
+plotdat <- estdf.comb[grep("phi_C", estdf.comb$par), ]
+plotdat <- estdf.comb[grep("psi", estdf.comb$par), ]
+pd <- position_dodge(0.3)
+ggplot(plotdat, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd)
