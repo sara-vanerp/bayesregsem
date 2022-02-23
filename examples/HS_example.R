@@ -237,7 +237,7 @@ graph_sem(fittestB, layout = lay)
 
 ##### 8. Apply classical regsem to the training set -----
 ## Fit model with all cross-loadings in lavaan
-HS.mod.cl <- HSmod0 <- 'visual =~ lv1*x1 + lv2*x2 + lv3*x3 + lv4*x4 + lv5*x5 + lv6*x6 + lv7*x7 + lv8*x8 + lv9*x9 + lv10*x10
+HS.mod.cl <- 'visual =~ lv1*x1 + lv2*x2 + lv3*x3 + lv4*x4 + lv5*x5 + lv6*x6 + lv7*x7 + lv8*x8 + lv9*x9 + lv10*x10
 textual =~ lt1*x1 + lt2*x2 + lt3*x3 + lt4*x4 + lt5*x5 + lt6*x6 + lt7*x7 + lt8*x8 + lt9*x9 + lt10*x10
 speed =~ ls1*x1 + ls2*x2 + ls3*x3 + ls4*x4 + ls5*x5 + ls6*x6 + ls7*x7 + ls8*x8 + ls9*x9 + ls10*x10'
 
@@ -253,8 +253,10 @@ fit.regsem <- cv_regsem(fit.lav,
                         jump = .025,
                         type = "lasso",
                         metric = "BIC")
+save(fit.regsem, file = "./examples/HS_fit_regsem.RData")
 
 ## Get fit results
+load("./examples/HS_fit_regsem.RData")
 summary(fit.regsem)
 round(fit.regsem$fits, 2)
 plot(fit.regsem, show.minimum = "BIC")
@@ -277,8 +279,23 @@ estdf.reg <- cbind.data.frame("par" = names(est.reg),
                               "97.5%" = NA,
                               "prior" = "regsem")
 
+## Add lavaan estimates
+fit.lav0 <- cfa(HSmod0, data = traindat, std.lv = TRUE)
+est.lav <- coef(fit.lav0)
+
+names(est.lav) <- c("L_main_C[1]", "L_main_C[2]", "L_main_C[3]", "L_main_C[4]", "L_main_C[5]",
+                    "L_main_C[6]", "L_main_C[7]", "L_main_C[8]", "L_main_C[9]", "L_main_C[10]",
+                    "psi[1]", "psi[2]", "psi[3]", "psi[4]", "psi[5]", "psi[6]", "psi[7]", "psi[8]", "psi[9]", "psi[10]",
+                    "phi_C[1,2]", "phi_C[1,3]", "phi_C[2,3]")
+ci <- parameterEstimates(fit.lav0)[-c(21:23), ]
+estdf.lav <- cbind.data.frame("par" = names(est.lav), 
+                              "mean" = est.lav,
+                              "2.5%" = ci[, "ci.lower"],
+                              "97.5%" = ci[, "ci.upper"],
+                              "prior" = "lavaan")
+
 ## Combine with shrinkage estimates and plot
-estdf.comb <- rbind.data.frame(estdf, estdf.reg)
+estdf.comb <- rbind.data.frame(estdf, estdf.reg, estdf.lav)
 
 # select parameters to plot
 plotdat <- estdf.comb[which(estdf.comb$par %in% crossF1), ]
