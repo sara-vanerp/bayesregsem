@@ -288,21 +288,97 @@ names(est.lav) <- c("L_main_C[1]", "L_main_C[2]", "L_main_C[3]", "L_main_C[4]", 
                     "psi[1]", "psi[2]", "psi[3]", "psi[4]", "psi[5]", "psi[6]", "psi[7]", "psi[8]", "psi[9]", "psi[10]",
                     "phi_C[1,2]", "phi_C[1,3]", "phi_C[2,3]")
 ci <- parameterEstimates(fit.lav0)[-c(21:23), ]
-estdf.lav <- cbind.data.frame("par" = names(est.lav), 
+estdf.lav.main <- cbind.data.frame("par" = names(est.lav), 
                               "mean" = est.lav,
                               "2.5%" = ci[, "ci.lower"],
                               "97.5%" = ci[, "ci.upper"],
                               "prior" = "lavaan")
+estdf.lav.cl <- cbind.data.frame("par" = paste0("L_cross_C[", 1:20, "]"),
+                                 "mean" = 0,
+                                 "2.5%" = NA,
+                                 "97.5%" = NA,
+                                 "prior" = "lavaan")
+estdf.lav <- rbind.data.frame(estdf.lav.main, estdf.lav.cl)
 
 ## Combine with shrinkage estimates and plot
-estdf.comb <- rbind.data.frame(estdf, estdf.reg, estdf.lav)
+estdf.comb <- rbind.data.frame(estdf[which(estdf$prior != "reghs1"), ], # exclude reghs1 for now (no substantial differences with reghs2)
+                               estdf.reg, 
+                               estdf.lav)
 
-# select parameters to plot
-plotdat <- estdf.comb[which(estdf.comb$par %in% crossF1), ]
-plotdat <- estdf.comb[grep("L_main_C", estdf.comb$par), ]
-plotdat <- estdf.comb[grep("phi_C", estdf.comb$par), ]
-plotdat <- estdf.comb[grep("psi", estdf.comb$par), ]
+# change factor levels
+estdf.comb$prior <- as.factor(estdf.comb$prior)
+levels(estdf.comb$prior) <- list("Classical" = "lavaan",
+                                 "Classical lasso" = "regsem",
+                                 "Bayesian ridge" = "ridge1",
+                                 "Bayesian horseshoe" = "reghs2")
+
+estdf.comb$par <- as.factor(estdf.comb$par)
+levels(estdf.comb$par) <- list("V=~x1" = "L_main_C[1]","V=~x2" = "L_main_C[2]","V=~x3" = "L_main_C[3]",
+                               "V=~x4" = "L_cross_C[7]","V=~x5" = "L_cross_C[8]","V=~x6" = "L_cross_C[9]",
+                               "V=~x7" = "L_cross_C[13]","V=~x8" = "L_cross_C[14]","V=~x9" = "L_cross_C[15]","V=~x10" = "L_cross_C[16]",
+                               "T=~x1" = "L_cross_C[1]","T=~x2" = "L_cross_C[2]","T=~x3" = "L_cross_C[3]",
+                               "T=~x4" = "L_main_C[4]","T=~x5" = "L_main_C[5]","T=~x6" = "L_main_C[6]",
+                               "T=~x7" = "L_cross_C[17]","T=~x8" = "L_cross_C[18]","T=~x9" = "L_cross_C[19]","T=~x10" = "L_cross_C[20]",
+                               "S=~x1" = "L_cross_C[4]","S=~x2" = "L_cross_C[5]","S=~x3" = "L_cross_C[6]",
+                               "S=~x4" = "L_cross_C[10]","S=~x5" = "L_cross_C[11]","S=~x6" = "L_cross_C[12]",
+                               "S=~x7" = "L_main_C[7]","S=~x8" = "L_main_C[8]","S=~x9" = "L_main_C[9]","S=~x10" = "L_main_C[10]")
+# TODO: add other parameters and change crossF below
+
+
+# plot
 pd <- position_dodge(0.3)
-ggplot(plotdat, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+
+plotdat1 <- estdf.comb[which(estdf.comb$par %in% crossF1), ]
+ggplot(plotdat1, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
-  geom_point(position = pd)
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
+plotdat2 <- estdf.comb[which(estdf.comb$par %in% crossF2), ]
+ggplot(plotdat2, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
+plotdat3 <- estdf.comb[which(estdf.comb$par %in% crossF3), ]
+ggplot(plotdat3, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
+plotdat4 <- estdf.comb[grep("L_main_C", estdf.comb$par), ]
+ggplot(plotdat4, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
+plotdat5 <- estdf.comb[grep("phi_C", estdf.comb$par), ]
+ggplot(plotdat5, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
+plotdat6 <- estdf.comb[grep("psi", estdf.comb$par), ]
+ggplot(plotdat6, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+
