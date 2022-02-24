@@ -321,14 +321,17 @@ levels(estdf.comb$par) <- list("V=~x1" = "L_main_C[1]","V=~x2" = "L_main_C[2]","
                                "T=~x7" = "L_cross_C[17]","T=~x8" = "L_cross_C[18]","T=~x9" = "L_cross_C[19]","T=~x10" = "L_cross_C[20]",
                                "S=~x1" = "L_cross_C[4]","S=~x2" = "L_cross_C[5]","S=~x3" = "L_cross_C[6]",
                                "S=~x4" = "L_cross_C[10]","S=~x5" = "L_cross_C[11]","S=~x6" = "L_cross_C[12]",
-                               "S=~x7" = "L_main_C[7]","S=~x8" = "L_main_C[8]","S=~x9" = "L_main_C[9]","S=~x10" = "L_main_C[10]")
-# TODO: add other parameters and change crossF below
-
+                               "S=~x7" = "L_main_C[7]","S=~x8" = "L_main_C[8]","S=~x9" = "L_main_C[9]","S=~x10" = "L_main_C[10]",
+                               "V~~V" = "phi_C[1,1]", "T~~T" = "phi_C[2,2]", "S~~S" = "phi_C[3,3]", 
+                               "V~~T" = "phi_C[1,2]", "V~~S" = "phi_C[1,3]", "T~~S" = "phi_C[2,3]",
+                               "x1~~x1" = "psi[1]", "x2~~x2" = "psi[2]", "x3~~x3" = "psi[3]", "x4~~x4" = "psi[4]", "x5~~x5" = "psi[5]",
+                               "x6~~x6" = "psi[6]", "x7~~x7" = "psi[7]", "x8~~x8" = "psi[8]", "x9~~x9" = "psi[9]", "x10~~x10" = "psi[10]")
 
 # plot
 pd <- position_dodge(0.3)
 
-plotdat1 <- estdf.comb[which(estdf.comb$par %in% crossF1), ]
+clF1 <- c("V=~x4", "V=~x5", "V=~x6", "V=~x7", "V=~x8", "V=~x9", "V=~x10")
+plotdat1 <- estdf.comb[which(estdf.comb$par %in% clF1), ]
 ggplot(plotdat1, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
@@ -337,7 +340,8 @@ ggplot(plotdat1, aes(x = par, y = `mean`, colour = prior, group = prior)) +
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
 
-plotdat2 <- estdf.comb[which(estdf.comb$par %in% crossF2), ]
+clF2 <- c("T=~x1", "T=~x2", "T=~x3", "T=~x7", "T=~x8", "T=~x9", "T=~x10")
+plotdat2 <- estdf.comb[which(estdf.comb$par %in% clF2), ]
 ggplot(plotdat2, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
@@ -346,7 +350,8 @@ ggplot(plotdat2, aes(x = par, y = `mean`, colour = prior, group = prior)) +
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
 
-plotdat3 <- estdf.comb[which(estdf.comb$par %in% crossF3), ]
+clF3 <- c("S=~x1", "S=~x2", "S=~x3", "S=~x4", "S=~x5", "S=~x6")
+plotdat3 <- estdf.comb[which(estdf.comb$par %in% clF3), ]
 ggplot(plotdat3, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
@@ -355,7 +360,10 @@ ggplot(plotdat3, aes(x = par, y = `mean`, colour = prior, group = prior)) +
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
 
-plotdat4 <- estdf.comb[grep("L_main_C", estdf.comb$par), ]
+ml <- c("V=~x1", "V=~x2", "V=~x3",
+        "T=~x4", "T=~x5", "T=~x6",
+        "S=~x7", "S=~x8", "S=~x9", "S=~x10")
+plotdat4 <- estdf.comb[which(estdf.comb$par %in% ml), ]
 ggplot(plotdat4, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
@@ -364,7 +372,8 @@ ggplot(plotdat4, aes(x = par, y = `mean`, colour = prior, group = prior)) +
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
 
-plotdat5 <- estdf.comb[grep("phi_C", estdf.comb$par), ]
+lvv <- c("V~~T", "V~~S", "T~~S")
+plotdat5 <- estdf.comb[which(estdf.comb$par %in% lvv), ]
 ggplot(plotdat5, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
@@ -373,7 +382,7 @@ ggplot(plotdat5, aes(x = par, y = `mean`, colour = prior, group = prior)) +
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
 
-plotdat6 <- estdf.comb[grep("psi", estdf.comb$par), ]
+plotdat6 <- estdf.comb[grep("~~x", estdf.comb$par), ]
 ggplot(plotdat6, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
