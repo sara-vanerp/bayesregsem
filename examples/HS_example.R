@@ -214,7 +214,7 @@ ggplot(plotdat, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd)
 
-##### 7. Test the resulting model on the test set -----
+##### 7. Test the resulting shrinkage prior model on the test set -----
 ## Based on the 95% CI, we would add cross-loading 15
 HSmodB <- 'visual =~ x1 + x2 + x3 + x9
 textual =~ x4 + x5 + x6
@@ -225,10 +225,6 @@ fittestB <- cfa(HSmodB,
 
 fitmeastestB <- fitmeasures(fittestB, 
                            c("pvalue", "cfi", "tli", "rmsea", "srmr"))
-rbind(
-  fitmeastest,
-  fitmeastestB
-)
 
 ## Plot final model (with 1 added cross-loading)
 lay <- get_layout("", "", "visual","","textual","","","speed", "", "",
@@ -279,6 +275,7 @@ estdf.reg <- cbind.data.frame("par" = names(est.reg),
                               "97.5%" = NA,
                               "prior" = "regsem")
 
+##### 9. Combine all estimates and plot ------
 ## Add lavaan estimates
 fit.lav0 <- cfa(HSmod0, data = traindat, std.lv = TRUE)
 est.lav <- coef(fit.lav0)
@@ -327,67 +324,116 @@ levels(estdf.comb$par) <- list("V=~x1" = "L_main_C[1]","V=~x2" = "L_main_C[2]","
                                "x1~~x1" = "psi[1]", "x2~~x2" = "psi[2]", "x3~~x3" = "psi[3]", "x4~~x4" = "psi[4]", "x5~~x5" = "psi[5]",
                                "x6~~x6" = "psi[6]", "x7~~x7" = "psi[7]", "x8~~x8" = "psi[8]", "x9~~x9" = "psi[9]", "x10~~x10" = "psi[10]")
 
-# plot
+# plot estimates
 pd <- position_dodge(0.3)
 
 clF1 <- c("V=~x4", "V=~x5", "V=~x6", "V=~x7", "V=~x8", "V=~x9", "V=~x10")
 plotdat1 <- estdf.comb[which(estdf.comb$par %in% clF1), ]
-ggplot(plotdat1, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p1 <- ggplot(plotdat1, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_clF1.pdf", width = 7, height = 7)
+p1
+dev.off()
 
 clF2 <- c("T=~x1", "T=~x2", "T=~x3", "T=~x7", "T=~x8", "T=~x9", "T=~x10")
 plotdat2 <- estdf.comb[which(estdf.comb$par %in% clF2), ]
-ggplot(plotdat2, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p2 <- ggplot(plotdat2, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_clF2.pdf", width = 7, height = 7)
+p2
+dev.off()
 
 clF3 <- c("S=~x1", "S=~x2", "S=~x3", "S=~x4", "S=~x5", "S=~x6")
 plotdat3 <- estdf.comb[which(estdf.comb$par %in% clF3), ]
-ggplot(plotdat3, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p3 <- ggplot(plotdat3, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_clF3.pdf", width = 7, height = 7)
+p3
+dev.off()
 
 ml <- c("V=~x1", "V=~x2", "V=~x3",
         "T=~x4", "T=~x5", "T=~x6",
         "S=~x7", "S=~x8", "S=~x9", "S=~x10")
 plotdat4 <- estdf.comb[which(estdf.comb$par %in% ml), ]
-ggplot(plotdat4, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p4 <- ggplot(plotdat4, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_ml.pdf", width = 7, height = 7)
+p4
+dev.off()
 
 lvv <- c("V~~T", "V~~S", "T~~S")
 plotdat5 <- estdf.comb[which(estdf.comb$par %in% lvv), ]
-ggplot(plotdat5, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p5 <- ggplot(plotdat5, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_lvv.pdf", width = 7, height = 7)
+p5
+dev.off()
 
 plotdat6 <- estdf.comb[grep("~~x", estdf.comb$par), ]
-ggplot(plotdat6, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+p6 <- ggplot(plotdat6, aes(x = par, y = `mean`, colour = prior, group = prior)) +
   geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
   geom_point(position = pd) +
   theme_bw(base_size = 14, base_family = "") + 
   theme(legend.title = element_blank(),
         legend.position = "bottom") +
   labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_rv.pdf", width = 7, height = 7)
+p6
+dev.off()
 
+parsel <- c("V~~S", "S=~x7", "S=~x9", "x7~~x7")
+plotdat7 <- estdf.comb[which(estdf.comb$par %in% parsel), ]
+p7 <- ggplot(plotdat7, aes(x = par, y = `mean`, colour = prior, group = prior)) +
+  geom_errorbar(aes(ymin = `2.5%`, ymax = `97.5%`), width = .2, position = pd) +
+  geom_point(position = pd) +
+  theme_bw(base_size = 14, base_family = "") + 
+  theme(legend.title = element_blank(),
+        legend.position = "bottom") +
+  labs(title = "", x = "Parameter", y = "Estimate")
+pdf(file = "./examples/HS_est_parsel.pdf", width = 7, height = 7)
+p7
+dev.off()
+
+##### 10. Fit final regsem model to the test set and compare all results -----
+HSmod.regsem <- 'visual =~ x1 + x2 + x3 + x5 + x7 + x9
+textual =~ x4 + x5 + x6 + x3
+speed =~ x7 + x8 + x9 + x10 + x6'
+
+fittest.regsem <- cfa(HSmod.regsem, 
+               data = testdat)
+
+summary(fittest.regsem, fit.measures = TRUE)
+
+fitmeastest.regsem <- fitmeasures(fittest.regsem, 
+                           c("pvalue", "cfi", "tli", "rmsea", "srmr"))
+
+# combine
+round(
+  rbind(fitmeastest,
+      fitmeastestB,
+      fitmeastest.regsem), 5)
